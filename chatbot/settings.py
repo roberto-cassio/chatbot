@@ -76,6 +76,10 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
 
+XAI_API_KEY = OS.GET("XAI_API_KEY")
+XAI_API_MODEL = OS.GET("XAI_API_MODEL")
+XAI_TEMPERATURE = float(os.getenv("XAI_TEMPERATURE", "0.7"))
+
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
