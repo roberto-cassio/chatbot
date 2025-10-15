@@ -2,7 +2,9 @@ import json
 from django.http import JsonResponse
 from django.shortcuts import render
 from core.services import ChatBotService
+from django.views.decorators.csrf import csrf_exempt
 
+@csrf_exempt # Para teste, remover
 def ChatView(request):
   if request.method == "POST":
     try:
