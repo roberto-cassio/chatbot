@@ -24,7 +24,7 @@ def chat_view(request):
   
       chatbot_response = service.get_bot_response(user_message)
       redis_service.save_history(session_id, service.session.history)
-      return JsonResponse({'answer': chatbot_response,
+      return JsonResponse({'resposta': chatbot_response,
                            'session_id': session_id})
     except json.JSONDecodeError:
       return JsonResponse({'error': 'Invalid JSON'}, status=400)
