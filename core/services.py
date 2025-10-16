@@ -1,6 +1,6 @@
 from django.conf import settings
 from .middleware import InputSanitization
-from .ai_clients import OpenAIClient, GrokClient
+from .ai_clients import OpenAIClient, GroqClient, GrokClient
 
 class ChatSession:
   def __init__(self, system_message):
@@ -42,10 +42,15 @@ class ChatBotService:
           api_key=settings.OPENAI_API_KEY,
           model=settings.OPENAI_MODEL
         )
-    self.fallback_client = GrokClient(
+    self.secondary_client = GroqClient(
+            api_key=settings.GROQ_API_KEY,
+            model=settings.GROQ_MODEL
+        )
+    self.tertiary_client = GrokClient(
             api_key=settings.XAI_API_KEY,
             model=settings.XAI_API_MODEL
-        )
+        ) if settings.XAI_API_KEY else None
+    self.last_provider = None
 
   def get_bot_response(self, user_message):
     user_message = InputSanitization.sanitize_input(user_message)
@@ -59,8 +64,24 @@ class ChatBotService:
   def _fallback_strategy(self, messages):
     try:
         response = self.primary_client.chat(messages)
+        self.last_provider = 'openai'
         return response
-    except Exception:
-        response = self.fallback_client.chat(messages)
-        return response
+    except Exception as e:
+        print(f"[ChatBot] OpenAI failed: {e}")
+        try:
+            response = self.secondary_client.chat(messages)
+            self.last_provider = 'groq'
+            return response
+        except Exception as e:
+            print(f"[ChatBot] Groq failed: {e}")
+            if self.tertiary_client:
+                try:
+                    response = self.tertiary_client.chat(messages)
+                    self.last_provider = 'grok'
+                    return response
+                except Exception as e:
+                    print(f"[ChatBot] Grok failed: {e}")
+                    raise Exception("All AI providers failed")
+            else:
+                raise Exception("Primary and secondary providers failed, no tertiary configured")
 
