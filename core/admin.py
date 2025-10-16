@@ -1,5 +1,20 @@
 from django.contrib import admin
-from .models import ChatSession, ChatMessage
+from .models import AIConfig, ChatSession, ChatMessage
+
+
+@admin.register(AIConfig)
+class AIConfigAdmin(admin.ModelAdmin):
+    list_display = ['id', 'is_active', 'system_preview', 'created_at']
+    list_filter = ['is_active']
+    search_fields = ['system']
+    
+    def system_preview(self, obj):
+        return obj.system[:100] + '...' if obj.system and len(obj.system) > 100 else obj.system
+    system_preview.short_description = 'Prompt do Sistema'
+    
+    def created_at(self, obj):
+        return 'Configurado'
+    created_at.short_description = 'Status'
 
 
 @admin.register(ChatSession)
