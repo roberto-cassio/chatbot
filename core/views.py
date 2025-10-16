@@ -1,9 +1,11 @@
 import json
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from .redis_service import RedisService
 from .services import ChatBotService
 from .logger_service import ChatLogger
 
+@csrf_exempt
 def chat_view(request):
   if request.method == "POST":
     try:

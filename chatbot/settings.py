@@ -76,9 +76,18 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
 
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")
+GROQ_TEMPERATURE = float(os.getenv("GROQ_TEMPERATURE", "0.7"))
+
 XAI_API_KEY = os.getenv("XAI_API_KEY")
 XAI_API_MODEL = os.getenv("XAI_API_MODEL")
 XAI_TEMPERATURE = float(os.getenv("XAI_TEMPERATURE", "0.7"))
+
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_DB = int(os.getenv('REDIS_DB', 0))
+CHAT_HISTORY_TTL = 3600
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
