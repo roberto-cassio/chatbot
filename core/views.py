@@ -1,11 +1,8 @@
 import json
 from django.http import JsonResponse
-from django.shortcuts import render
 from core.services import ChatBotService
-from django.views.decorators.csrf import csrf_exempt
 
-@csrf_exempt # Para teste, remover
-def ChatView(request):
+def chat_view(request):
   if request.method == "POST":
     try:
       data = json.loads(request.body)
@@ -14,7 +11,8 @@ def ChatView(request):
       if not user_message:
         return JsonResponse({'error': 'No question provided'}, status=400) 
 
-      chatbot_response = ChatBotService.get_bot_response(user_message)
+      service = ChatBotService()
+      chatbot_response = service.get_bot_response(user_message)
       return JsonResponse({'answer': chatbot_response})
     except json.JSONDecodeError:
       return JsonResponse({'error': 'Invalid JSON'}, status=400)

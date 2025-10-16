@@ -22,7 +22,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv(SECRET_KEY)
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -75,6 +75,10 @@ WSGI_APPLICATION = 'chatbot.wsgi.application'
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
+
+XAI_API_KEY = os.getenv("XAI_API_KEY")
+XAI_API_MODEL = os.getenv("XAI_API_MODEL")
+XAI_TEMPERATURE = float(os.getenv("XAI_TEMPERATURE", "0.7"))
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
