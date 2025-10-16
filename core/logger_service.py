@@ -1,24 +1,14 @@
+import logging
 import threading
 from .models import ChatSession, ChatMessage
 
 
 class ChatLogger:
-    """
-    Serviço para logging de conversas do chatbot.
-    Suporta logging síncrono e assíncrono.
-    """
+
+    logger = logging.getLogger('chatbot_logger')
     
     @staticmethod
     def log_message(session_id, role, content, ai_provider=None):
-        """
-        Loga uma mensagem do chat de forma síncrona.
-        
-        Args:
-            session_id: UUID da sessão
-            role: 'user', 'assistant' ou 'system'
-            content: Conteúdo da mensagem
-            ai_provider: 'openai' ou 'grok' (opcional)
-        """
         try:
             session, _ = ChatSession.objects.get_or_create(
                 session_id=session_id
@@ -30,20 +20,10 @@ class ChatLogger:
                 ai_provider=ai_provider
             )
         except Exception as e:
-            print(f"[ChatLogger] Erro ao logar mensagem: {e}")
-    
+            ChatLogger.logger.error(f"Erro ao logar mensagem: {e}")
+
     @staticmethod
     def log_message_async(session_id, role, content, ai_provider=None):
-        """
-        Loga uma mensagem do chat de forma assíncrona (background thread).
-        Não bloqueia a resposta HTTP.
-        
-        Args:
-            session_id: UUID da sessão
-            role: 'user', 'assistant' ou 'system'
-            content: Conteúdo da mensagem
-            ai_provider: 'openai' ou 'grok' (opcional)
-        """
         thread = threading.Thread(
             target=ChatLogger.log_message,
             args=(session_id, role, content, ai_provider),
@@ -53,22 +33,12 @@ class ChatLogger:
     
     @staticmethod
     def log_conversation(session_id, user_message, bot_response, ai_provider=None):
-        """
-        Loga uma troca completa (user + bot) de forma assíncrona.
-        
-        Args:
-            session_id: UUID da sessão
-            user_message: Mensagem do usuário
-            bot_response: Resposta do bot
-            ai_provider: 'openai' ou 'grok' (opcional)
-        """
         def _log_both():
             try:
                 session, _ = ChatSession.objects.get_or_create(
                     session_id=session_id
                 )
                 
-                # Cria ambas as mensagens em uma transação
                 ChatMessage.objects.create(
                     session=session,
                     role='user',
@@ -81,7 +51,7 @@ class ChatLogger:
                     ai_provider=ai_provider
                 )
             except Exception as e:
-                print(f"[ChatLogger] Erro ao logar conversa: {e}")
-        
+                ChatLogger.logger.error(f"Erro ao logar conversa: {e}")
+
         thread = threading.Thread(target=_log_both, daemon=True)
         thread.start()

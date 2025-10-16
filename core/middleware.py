@@ -1,6 +1,6 @@
 import html
 import re
-
+from django.conf import settings
 
 class InputSanitization:
   @staticmethod
@@ -22,5 +22,5 @@ class InputSanitization:
     return ''.join(c for c in text if c.isprintable())
 
   @staticmethod
-  def truncate_text(text, max_length=1000):
+  def truncate_text(text, max_length=settings.MAX_INPUT_LENGTH):
     return text[:max_length]
