@@ -1,5 +1,10 @@
 from django.db import models
 
+class AIConfig(models.Model):
+  id = models.AutoField(primary_key=True)
+  system = models.TextField(null=True, blank=True)
+  is_active = models.BooleanField(default=False)
+
 class ChatSession(models.Model):
   session_id = models.CharField(max_length=64, unique=True)
   created_at = models.DateTimeField(auto_now_add=True)

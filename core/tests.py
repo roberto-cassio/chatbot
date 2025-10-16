@@ -1,10 +1,10 @@
 import json
 from django.test import TestCase, Client
 from django.urls import reverse
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 from core.services import ChatBotService, ChatSession
 from core.middleware import InputSanitization
-from core.models import ChatSession as ChatSessionModel, ChatMessage
+from core.models import AIConfig, ChatSession as ChatSessionModel, ChatMessage
 
 
 class InputSanitizationTestCase(TestCase):
@@ -52,9 +52,12 @@ class ChatSessionTestCase(TestCase):
 
 class ChatBotServiceTestCase(TestCase):
     
+    @patch('core.services.AIConfig.objects.filter')
     @patch('core.services.OpenAIClient')
     @patch('core.services.GroqClient')
-    def test_fallback_strategy_primary_success(self, mock_groq, mock_openai):
+    def test_fallback_strategy_primary_success(self, mock_groq, mock_openai, mock_aiconfig):
+        mock_aiconfig.return_value.first.return_value = None
+        
         mock_openai_instance = MagicMock()
         mock_openai_instance.chat.return_value = "OpenAI response"
         mock_openai.return_value = mock_openai_instance
@@ -68,9 +71,12 @@ class ChatBotServiceTestCase(TestCase):
         self.assertEqual(service.last_provider, 'openai')
         mock_openai_instance.chat.assert_called_once()
     
+    @patch('core.services.AIConfig.objects.filter')
     @patch('core.services.OpenAIClient')
     @patch('core.services.GroqClient')
-    def test_fallback_strategy_uses_groq_on_openai_failure(self, mock_groq, mock_openai):
+    def test_fallback_strategy_uses_groq_on_openai_failure(self, mock_groq, mock_openai, mock_aiconfig):
+        mock_aiconfig.return_value.first.return_value = None
+        
         mock_openai_instance = MagicMock()
         mock_openai_instance.chat.side_effect = Exception("OpenAI down")
         
@@ -172,3 +178,47 @@ class ChatLogModelTestCase(TestCase):
         messages = session.messages.all()
         self.assertEqual(messages[0].content, 'First')
         self.assertEqual(messages[1].content, 'Second')
+
+
+class AIConfigTestCase(TestCase):
+    
+    def test_create_ai_config(self):
+        config = AIConfig.objects.create(
+            system="Test prompt",
+            is_active=True
+        )
+        self.assertEqual(config.system, "Test prompt")
+        self.assertTrue(config.is_active)
+    
+    def test_only_one_active_config(self):
+        config1 = AIConfig.objects.create(system="Prompt 1", is_active=True)
+        config2 = AIConfig.objects.create(system="Prompt 2", is_active=False)
+        
+        active_config = AIConfig.objects.filter(is_active=True).first()
+        self.assertEqual(active_config.system, "Prompt 1")
+    
+    @patch('core.services.AIConfig.objects.filter')
+    @patch('core.services.OpenAIClient')
+    @patch('core.services.GroqClient')
+    def test_chatbot_uses_custom_prompt_when_available(self, mock_groq, mock_openai, mock_aiconfig):
+        mock_config = Mock()
+        mock_config.system = "Custom prompt from database"
+        mock_aiconfig.return_value.first.return_value = mock_config
+        
+        mock_openai.return_value = MagicMock()
+        mock_groq.return_value = MagicMock()
+        
+        service = ChatBotService()
+        self.assertEqual(service.session.system_message, "Custom prompt from database")
+    
+    @patch('core.services.AIConfig.objects.filter')
+    @patch('core.services.OpenAIClient')
+    @patch('core.services.GroqClient')
+    def test_chatbot_uses_default_prompt_when_no_config(self, mock_groq, mock_openai, mock_aiconfig):
+        mock_aiconfig.return_value.first.return_value = None
+        
+        mock_openai.return_value = MagicMock()
+        mock_groq.return_value = MagicMock()
+        
+        service = ChatBotService()
+        self.assertIn("Petlove", service.session.system_message)
