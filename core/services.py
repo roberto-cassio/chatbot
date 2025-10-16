@@ -46,6 +46,7 @@ class ChatBotService:
             api_key=settings.XAI_API_KEY,
             model=settings.XAI_API_MODEL
         )
+    self.last_provider = None
 
   def get_bot_response(self, user_message):
     user_message = InputSanitization.sanitize_input(user_message)
@@ -59,8 +60,10 @@ class ChatBotService:
   def _fallback_strategy(self, messages):
     try:
         response = self.primary_client.chat(messages)
+        self.last_provider = 'openai'
         return response
     except Exception:
         response = self.fallback_client.chat(messages)
+        self.last_provider = 'grok'
         return response
 
