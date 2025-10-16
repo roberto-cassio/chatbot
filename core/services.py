@@ -1,5 +1,6 @@
-import openai
 from django.conf import settings
+from .middleware import InputSanitization
+from .ai_clients import OpenAIClient, GrokClient
 
 class ChatSession:
   def __init__(self, system_message):
@@ -36,18 +37,18 @@ class ChatBotService:
                   Aconselhe o cliente sempre que possível, oferecendo múltiplas opções e alternativas."""
   
   def __init__(self):
-    self.session = ChatSession(system=self.system)
-        self.primary_client = OpenAIClient(
+    self.session = ChatSession(system_message=self.system)
+    self.primary_client = OpenAIClient(
           api_key=settings.OPENAI_API_KEY,
           model=settings.OPENAI_MODEL
         )
-        self.fallback_client = GrokClient(
+    self.fallback_client = GrokClient(
             api_key=settings.XAI_API_KEY,
             model=settings.XAI_API_MODEL
         )
 
   def get_bot_response(self, user_message):
-    user_message = sanitize_input(user_message)
+    user_message = InputSanitization.sanitize_input(user_message)
     self.session.add_user(user_message)
     messages = self.session.get_past_messages()
     bot_response = self._fallback_strategy(messages)
@@ -63,28 +64,3 @@ class ChatBotService:
         response = self.fallback_client.chat(messages)
         return response
 
-  @staticmethod
-  def sanitize_input(message):
-    message = remove_html_tags(message)
-    message = remove_non_ascii
-    message = remove_control_chars(message)
-    message = truncate_text(message)
-
-    return message
-
-  @staticmethod
-  def remove_html_tags(message):
-    message = re.sub(r'<.*?>', '', message)
-    message = html.escape(message)
-
-  @staticmethod
-  def remove_non_ascii(text):
-      return ''.join(c for c in text if ord(c) < 128)
-
-  @staticmethod
-  def remove_control_chars(text):
-    return ''.join(c for c in text if c.isprintable())
-
-  @staticmethod
-  def truncate_text(text, max_length=1000):
-    return text[:max_length]
