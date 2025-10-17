@@ -56,7 +56,7 @@ Chatbot inteligente desenvolvido como assistente de vendas para e-commerce da Pe
 ### 1. Clone o repositório
 ```bash
 git clone https://github.com/roberto-cassio/chatbot.git
-cd chatbot/chatbot
+cd chatbot
 ```
 
 ### 2. Crie um ambiente virtual
