@@ -171,6 +171,15 @@ curl -X POST http://localhost:8000/api/question-and-answer/ \
 
 ## 🎯 Diferenciais Técnicos
 
+### �️ Catálogo de Produtos Integrado
+- **Model Product**: Produtos armazenados no banco de dados SQLite
+- **Injeção automática**: Catálogo carregado dinamicamente no contexto da IA
+- **Pré-prompt + Prompt**: Arquitetura separada para catálogo e instruções
+- **Filtragem inteligente**: Apenas produtos disponíveis (`is_available=True` e `stock > 0`)
+- **Campos completos**: Nome, categoria, preço, estoque, espécie, raça, idade, descrição
+- **Django Admin**: Interface completa para gerenciar produtos (criar, editar, desativar)
+- **Recomendações reais**: IA recomenda apenas produtos que existem e estão em estoque
+
 ### 🔄 Resiliência
 - **Triple Fallback**: Se OpenAI falhar, tenta Groq. Se Groq falhar, tenta Grok.
 - **Rastreamento**: Sabe qual provedor respondeu (`last_provider`)
@@ -281,6 +290,7 @@ chatbot/
 ├── chatbot/
 │   ├── settings.py         # Configurações
 │   └── urls.py
+├── populate_products.py    # Script para popular produtos
 ├── requirements.txt
 ├── .env.example
 ├── .gitignore
@@ -288,7 +298,7 @@ chatbot/
 ```
 
 ## 🚀 Próximos Passos
-
+-  **RAG (Retrieval-Augmented Generation)**: Indexar produtos com embeddings vetoriais, buscar apenas produtos relevantes por query (ex: "ração golden" → só rações para raças grandes) tornando as respostas mais precisas e com menor custo de tokens.
 -  **Rate Limiting via Redis**: Proteção contra abuso de API usando Redis para controle de requisições por IP/usuário
 -  **Circuit Breaker**: Adicionar padrão de resiliência para evitar sobrecarga em falhas consecutivas
 -  **Celery para Processamento Assíncrono**: Substituir threading manual por Celery com RabbitMQ/Redis para logging e tarefas pesadas
