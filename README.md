@@ -314,7 +314,7 @@ chatbot/
 
 
 
-## 🧠 Patch: Gerenciamento de Histórico Conversacional
+## 🛠️ Patch: Gerenciamento de Histórico Conversacional
 
 ### Problema Identificado
 Durante o desenvolvimento, foi identificado um bug crítico: o histórico das conversas crescia indefinidamente, aumentando o custo de tokens e podendo causar lentidão ou erros nas respostas do chatbot.
