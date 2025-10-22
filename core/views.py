@@ -19,22 +19,26 @@ def chat_view(request):
       history = redis_service.get_history(session_id)
 
       service = ChatBotService()
-      service.session.history = history
+      # Carrega histórico anterior
+      service.memory.chat_memory.messages = service.deserialize_history(history)
 
       user_message = data.get('question', '')
       if not user_message:
-        return JsonResponse({'error': 'No question provided'}, status=400) 
-  
+        return JsonResponse({'error': 'No question provided'}, status=400)
+
       chatbot_response = service.get_bot_response(user_message)
-      redis_service.save_history(session_id, service.session.history)
-      
+      # Serializa o histórico atualizado após a resposta
+      updated_history = service.memory.chat_memory.messages
+      serialized_history = service.serialize_history(updated_history)
+      redis_service.save_history(session_id, serialized_history)
+
       ChatLogger.log_conversation(
           session_id=session_id,
           user_message=user_message,
           bot_response=chatbot_response,
           ai_provider=service.last_provider
       )
-      
+
       return JsonResponse({
           'response': chatbot_response,
           'session_id': session_id

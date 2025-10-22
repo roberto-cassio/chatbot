@@ -1,24 +1,14 @@
 import logging
 from django.conf import settings
+from langchain.memory import ConversationBufferWindowMemory
 
 from .models import AIConfig, Product
 from .middleware import InputSanitization
 from .ai_clients import OpenAIClient, GroqClient, GrokClient
+from langchain.schema import HumanMessage, AIMessage
+
 
 logger = logging.getLogger('chatbot_logger')
-
-class ChatSession:
-  def __init__(self, system_message):
-    self.system_message = system_message
-    self.history = []
-
-  def add_user(self, message):
-    self.history.append({'role': 'user', 'content': message})
-  def add_bot(self, message):
-    self.history.append({'role': 'assistant', 'content': message})
-
-  def get_past_messages(self):
-      return [{'role': 'system', 'content': self.system_message}] + self.history
 
 
 class ChatBotService:
@@ -42,7 +32,7 @@ Quando recomendar produtos:
     
     system_message = f"{pre_prompt}\n\n{prompt}"
     
-    self.session = ChatSession(system_message=system_message)
+    self.memory = ConversationBufferWindowMemory(k=5, return_messages=True)
     self.primary_client = OpenAIClient(
           api_key=settings.OPENAI_API_KEY,
           model=settings.OPENAI_MODEL
@@ -78,11 +68,17 @@ Quando recomendar produtos:
 
   def get_bot_response(self, user_message):
     user_message = InputSanitization.sanitize_input(user_message)
-    self.session.add_user(user_message)
-    messages = self.session.get_past_messages()
+    
+    self.memory.save_context({'input': user_message}, {'output': ''})
+    messages = self._build_messages()
     bot_response = self._fallback_strategy(messages)
-
-    self.session.add_bot(bot_response)
+    
+    chat_history = self.memory.load_memory_variables({})
+    if 'history' in chat_history and len(chat_history['history']) > 0:
+      last_msg = chat_history['history'][-1]
+      if hasattr(last_msg, 'type') and last_msg.type == 'ai':
+        chat_history['history'][-1].content = bot_response
+    
     return bot_response
 
   def _fallback_strategy(self, messages):
@@ -109,3 +105,19 @@ Quando recomendar produtos:
             else:
                 raise Exception("Primary and secondary providers failed, no tertiary configured")
 
+  def serialize_history(self, history):
+    serialized = []
+    for msg in history:
+        if hasattr(msg, "type"):
+            role = "user" if msg.type == "human" else "assistant"
+            serialized.append({"role": role, "content": msg.content})
+    return serialized
+  
+  def deserialize_history(self, history):
+    deserialized = []
+    for msg in history:
+        if msg["role"] == "user":
+            deserialized.append(HumanMessage(content=msg["content"]))
+        elif msg["role"] == "assistant":
+            deserialized.append(AIMessage(content=msg["content"]))
+    return deserialized
