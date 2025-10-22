@@ -12,6 +12,15 @@ logger = logging.getLogger('chatbot_logger')
 
 
 class ChatBotService:
+  def _build_messages(self):
+    messages = [{'role': 'system', 'content': self.memory.chat_memory.messages[0].content if self.memory.chat_memory.messages else self.DEFAULT_SYSTEM_PROMPT}]
+    for msg in self.memory.chat_memory.messages:
+      if hasattr(msg, 'type'):
+        if msg.type == 'human':
+          messages.append({'role': 'user', 'content': msg.content})
+        elif msg.type == 'ai':
+          messages.append({'role': 'assistant', 'content': msg.content})
+    return messages
   DEFAULT_SYSTEM_PROMPT = """Você é um assistente de vendas da Petlove, especializado em ajudar os usuários do e-commerce a encontrar e comprar produtos para seus animais de estimação. Seu objetivo é ser gentil, prestativo e eficiente em suas resposas, oferecendo uma experiência de compra personalizada.
 
 IMPORTANTE: Você tem acesso ao catálogo de produtos real da Petlove. SEMPRE consulte a lista de produtos disponíveis antes de fazer recomendações. Recomende APENAS produtos que estejam listados e disponíveis em estoque.
