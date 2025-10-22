@@ -169,6 +169,9 @@ curl -X POST http://localhost:8000/api/question-and-answer/ \
 # Bot vai recomendar considerando que é um golden de 2 anos!
 ```
 
+###Disclaimer:
+
+
 ## 🎯 Diferenciais Técnicos
 
 ### �️ Catálogo de Produtos Integrado
@@ -310,6 +313,29 @@ chatbot/
       - 🔄 **Load Balancing**: Distribuição inteligente entre prov logging e identificação das tentativas de acesso via IP além de dar mais uma camada de segurança para as API Keys.
 
 
+
+## 🧠 Patch: Gerenciamento de Histórico Conversacional
+
+### Problema Identificado
+Durante o desenvolvimento, foi identificado um bug crítico: o histórico das conversas crescia indefinidamente, aumentando o custo de tokens e podendo causar lentidão ou erros nas respostas do chatbot.
+
+### Solução Adotada: Langchain ConversationBufferWindowMemory
+Essa abordagem permite limitar o histórico a um número fixo de trocas (ex: 5 últimas interações), garantindo que apenas o contexto relevante seja mantido e evitando o crescimento infinito do histórico.
+
+#### Vantagens:
+- Controle automático do tamanho do histórico.
+- Redução de custos e maior previsibilidade no uso de tokens.
+- Pronto para futuras integrações com recursos avançados do Langchain (ex: RAG).
+
+#### Como funciona:
+- O histórico é gerenciado pelo Langchain e persistido no Redis.
+- A cada nova interação, apenas as últimas N trocas são mantidas na memória.
+- O sistema está protegido contra bugs de crescimento infinito do contexto.
+
+---
+
+**Decisão técnica:**  
+A adoção do Langchain foi motivada por um problema real de arquitetura, resolvendo de forma elegante e escalável o gerenciamento do histórico conversacional.
 ## 👤 Autor
 
 Roberto Cássio
