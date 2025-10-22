@@ -1,5 +1,35 @@
 from django.contrib import admin
-from .models import AIConfig, ChatSession, ChatMessage
+from .models import AIConfig, ChatSession, ChatMessage, Product
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ['name', 'category', 'price', 'stock', 'target_species', 'target_age', 'in_stock', 'is_available']
+    list_filter = ['category', 'target_species', 'target_age', 'is_available', 'created_at']
+    search_fields = ['name', 'description', 'target_breed']
+    list_editable = ['price', 'stock', 'is_available']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    fieldsets = (
+        ('Informações Básicas', {
+            'fields': ('name', 'category', 'description')
+        }),
+        ('Precificação e Estoque', {
+            'fields': ('price', 'stock', 'is_available')
+        }),
+        ('Segmentação', {
+            'fields': ('target_species', 'target_breed', 'target_age')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def in_stock(self, obj):
+        return obj.in_stock
+    in_stock.boolean = True
+    in_stock.short_description = 'Em Estoque'
 
 
 @admin.register(AIConfig)

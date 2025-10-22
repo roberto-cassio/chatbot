@@ -2,7 +2,7 @@ import logging
 from django.conf import settings
 from langchain.memory import ConversationBufferWindowMemory
 
-from .models import AIConfig
+from .models import AIConfig, Product
 from .middleware import InputSanitization
 from .ai_clients import OpenAIClient, GroqClient, GrokClient
 from langchain.schema import HumanMessage, AIMessage
@@ -12,11 +12,25 @@ logger = logging.getLogger('chatbot_logger')
 
 
 class ChatBotService:
-  DEFAULT_SYSTEM_PROMPT = """Você é um assistente de vendas da Petlove, especializado em ajudar os usuários do e-commerce a encontrar e comprar produtos para seus animais de estimação. Seu objetivo é ser gentil, prestativo e eficiente em suas respostas, oferecendo uma experiência de compra personalizada."""
+  DEFAULT_SYSTEM_PROMPT = """Você é um assistente de vendas da Petlove, especializado em ajudar os usuários do e-commerce a encontrar e comprar produtos para seus animais de estimação. Seu objetivo é ser gentil, prestativo e eficiente em suas resposas, oferecendo uma experiência de compra personalizada.
+
+IMPORTANTE: Você tem acesso ao catálogo de produtos real da Petlove. SEMPRE consulte a lista de produtos disponíveis antes de fazer recomendações. Recomende APENAS produtos que estejam listados e disponíveis em estoque.
+
+Quando recomendar produtos:
+- Mencione o nome exato do produto
+- Informe o preço
+- Confirme a disponibilidade em estoque
+- Destaque características relevantes da descrição
+- Se um produto estiver sem estoque, informe o cliente e sugira alternativas disponíveis"""
   
   def __init__(self):
     system_config = AIConfig.objects.filter(is_active=True).first()
-    self.system_message = system_config.system if system_config else self.DEFAULT_SYSTEM_PROMPT
+    prompt = system_config.system if system_config else self.DEFAULT_SYSTEM_PROMPT
+    
+    products = Product.objects.filter(is_available=True, stock__gt=0)
+    pre_prompt = self._format_product_catalog(products)
+    
+    system_message = f"{pre_prompt}\n\n{prompt}"
     
     self.memory = ConversationBufferWindowMemory(k=5, return_messages=True)
     self.primary_client = OpenAIClient(
@@ -33,15 +47,24 @@ class ChatBotService:
         ) if settings.XAI_API_KEY else None
     self.last_provider = None
 
-  def _build_messages(self):
-    messages = [{'role': 'system', 'content': self.system_message}]
-    chat_history = self.memory.load_memory_variables({})
-    if 'history' in chat_history:
-      for msg in chat_history['history']:
-        if hasattr(msg, 'type'):
-          role = 'user' if msg.type == 'human' else 'assistant'
-          messages.append({'role': role, 'content': msg.content})
-    return messages
+  def _format_product_catalog(self, products):
+    if not products.exists():
+      return "Nenhum produto disponível no momento."
+    
+    catalog = ["=== CATÁLOGO DE PRODUTOS DISPONÍVEIS ===\n"]
+    
+    for product in products:
+      catalog.append(f"• {product.name}")
+      catalog.append(f"  Categoria: {product.get_category_display()}")
+      catalog.append(f"  Preço: R$ {product.price}")
+      catalog.append(f"  Estoque: {product.stock} unidades")
+      catalog.append(f"  Para: {product.get_target_species_display()} | Idade: {product.get_target_age_display()}")
+      if product.target_breed:
+        catalog.append(f"  Raça específica: {product.target_breed}")
+      catalog.append(f"  Descrição: {product.description}")
+      catalog.append("")
+    
+    return "\n".join(catalog)
 
   def get_bot_response(self, user_message):
     user_message = InputSanitization.sanitize_input(user_message)
@@ -64,20 +87,20 @@ class ChatBotService:
         self.last_provider = 'openai'
         return response
     except Exception as e:
-        print(f"[ChatBot] OpenAI failed: {e}")
+        logger.warning(f"OpenAI failed: {e}")
         try:
             response = self.secondary_client.chat(messages)
             self.last_provider = 'groq'
             return response
         except Exception as e:
-            print(f"[ChatBot] Groq failed: {e}")
+            logger.warning(f"Groq failed: {e}")
             if self.tertiary_client:
                 try:
                     response = self.tertiary_client.chat(messages)
                     self.last_provider = 'grok'
                     return response
                 except Exception as e:
-                    print(f"[ChatBot] Grok failed: {e}")
+                    logger.error(f"Grok failed: {e}")
                     raise Exception("All AI providers failed")
             else:
                 raise Exception("Primary and secondary providers failed, no tertiary configured")
