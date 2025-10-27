@@ -40,6 +40,7 @@ Quando recomendar produtos:
     pre_prompt = self._format_product_catalog(products)
     
     system_message = f"{pre_prompt}\n\n{prompt}"
+    self.system_message = system_message
     
     self.memory = ConversationBufferWindowMemory(k=5, return_messages=True)
     self.primary_client = OpenAIClient(
